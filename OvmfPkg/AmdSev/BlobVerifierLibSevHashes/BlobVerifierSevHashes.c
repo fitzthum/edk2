@@ -97,6 +97,9 @@ VerifyBlob (
   INT32       Remaining;
   HASH_TABLE  *Entry;
 
+  // this does not need to halt because the measurement reflects
+  // not having a hash table 
+  // this allows guests to boot without the table
   if ((mHashesTable == NULL) || (mHashesTableSize == 0)) {
     DEBUG ((
       DEBUG_ERROR,
@@ -106,6 +109,19 @@ VerifyBlob (
     return EFI_ACCESS_DENIED;
   }
 
+  // if there is at least one blob (i.e. this function was called)
+  // then the hash table cannot be empty
+  if (mHashesTableSize <= 0) {
+    DEBUG((
+      DEBUG_ERROR,
+      "%a: Hash Table Provided but Contains no Entries\n",
+      __func__
+    ));
+    CpuDeadLoop ();
+  }
+
+  // the blob must have a valid name
+  // what if fwcfg is used for other blob types?
   Guid = FindBlobEntryGuid (BlobName);
   if (Guid == NULL) {
     DEBUG ((
@@ -114,7 +130,8 @@ VerifyBlob (
       __func__,
       BlobName
       ));
-    return EFI_ACCESS_DENIED;
+
+    CpuDeadLoop ();
   }
 
   //
@@ -154,6 +171,7 @@ VerifyBlob (
     //
     Sha256HashAll (Buf, BufSize, Hash);
 
+    // if the blob corresponds to an entry in the table, it must pass
     if (CompareMem (Entry->Data, Hash, EntrySize) == 0) {
       Status = EFI_SUCCESS;
       DEBUG ((
@@ -170,11 +188,28 @@ VerifyBlob (
         __func__,
         BlobName
         ));
+
+      CpuDeadLoop ();
     }
 
     return Status;
   }
 
+  // halt because there is no entry in the table for somethign that was provided
+  // unless size is nonzero, because that means there is no entry here
+  // don't halt here because we already know that size is nonzero
+  // we fail if the entry name isn't valid
+  // so to reach this point we must have a valid entry name
+  // and at least one thing in the table
+  // but this isn't the entry
+  // so someone is passing in a blob that isn't in the table
+  // which is allowed
+  //
+  // we need to make sure thta if there is a blob in the table
+  // it matches something
+  // which we don't directly check
+  // but we know the table is nonzero
+  // and we know there is at least one blob (because this was called)??
   DEBUG ((
     DEBUG_ERROR,
     "%a: Hash GUID %g not found in table\n",
