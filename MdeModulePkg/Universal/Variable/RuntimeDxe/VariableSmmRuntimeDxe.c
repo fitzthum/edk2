@@ -1191,6 +1191,7 @@ RuntimeServiceSetVariable (
   SMM_VARIABLE_COMMUNICATE_ACCESS_VARIABLE  *SmmVariableHeader;
   UINTN                                     VariableNameSize;
 
+  DEBUG((DEBUG_PROFILE, "runtime service set variable start\n"));
   //
   // Check input parameters.
   //

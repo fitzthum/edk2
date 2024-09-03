@@ -95,12 +95,21 @@ DebugPrintMarker (
   //
   // Check if the global mask disables this message or the device is inactive
   //
-  if (((ErrorLevel & GetDebugPrintErrorLevel ()) == 0) ||
+  if (((ErrorLevel != DEBUG_PROFILE)) ||
       !PlatformDebugLibIoPortFound ())
   {
     return;
   }
 
+  /*
+  if (((ErrorLevel & GetDebugPrintErrorLevel ()) == 0)  ||
+      !PlatformDebugLibIoPortFound ())
+  {
+    return;
+  }
+  */
+
+ 
   //
   // Convert the DEBUG() message to an ASCII String
   //

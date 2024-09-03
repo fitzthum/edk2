@@ -10,6 +10,8 @@
 **/
 
 #include "PxeBcImpl.h"
+#include <inttypes.h>
+#include <Library/TimerLib.h>
 
 EFI_DRIVER_BINDING_PROTOCOL  gPxeBcIp4DriverBinding = {
   PxeBcIp4DriverBindingSupported,
@@ -1307,6 +1309,9 @@ PxeBcSupported (
   EFI_GUID    *DhcpServiceBindingGuid;
   EFI_GUID    *MtftpServiceBindingGuid;
 
+  UINT64 ticks1 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "begin binding check iPXE handle=%" PRIu64 " TICKS=%" PRIu64 "\n", ControllerHandle, ticks1));
+
   if (IpVersion == IP_VERSION_4) {
     if (PcdGet8 (PcdIPv4PXESupport) == PXE_DISABLED) {
       return EFI_UNSUPPORTED;
@@ -1322,7 +1327,7 @@ PxeBcSupported (
     DhcpServiceBindingGuid  = &gEfiDhcp6ServiceBindingProtocolGuid;
     MtftpServiceBindingGuid = &gEfiMtftp6ServiceBindingProtocolGuid;
   }
-
+  DEBUG((DEBUG_PROFILE, "after pcds iPXE TICKS=0\n"));
   //
   // Try to open the Mtftp and Dhcp protocol to test whether IP stack is ready.
   //
@@ -1335,6 +1340,11 @@ PxeBcSupported (
                   EFI_OPEN_PROTOCOL_TEST_PROTOCOL
                   );
   if (!EFI_ERROR (Status)) {
+
+    UINT64 ticks2 = GetPerformanceCounter();
+    DEBUG((DEBUG_PROFILE, "after dhcp check iPXE TICKS = %" PRIu64 " \n", ticks2));
+
+
     Status = gBS->OpenProtocol (
                     ControllerHandle,
                     MtftpServiceBindingGuid,
@@ -1349,8 +1359,11 @@ PxeBcSupported (
   // It's unsupported case if IP stack are not ready.
   //
   if (EFI_ERROR (Status)) {
+    UINT64 ticks3 = GetPerformanceCounter();
+    DEBUG((DEBUG_PROFILE, "binding not supported iPXE TICKS = %" PRIu64 " \n", ticks3));
     return EFI_UNSUPPORTED;
   }
+  DEBUG((DEBUG_PROFILE, "binding supported iPXE TICKS=0\n"));
 
   return EFI_SUCCESS;
 }

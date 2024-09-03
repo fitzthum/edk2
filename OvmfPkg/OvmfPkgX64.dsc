@@ -561,7 +561,8 @@
   # DEBUG_VERBOSE   0x00400000  // Detailed debug messages that may
   #                             // significantly impact boot performance
   # DEBUG_ERROR     0x80000000  // Error
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x8000004F
+  # DEBUG_PROFILE   0x01000000  // Error
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x8100004F
 
 !if $(SOURCE_DEBUG_ENABLE) == TRUE
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x17
@@ -697,6 +698,8 @@
   gEfiMdePkgTokenSpaceGuid.PcdConfidentialComputingGuestAttr|0
 
   gEfiMdePkgTokenSpaceGuid.PcdFSBClock|1000000000
+
+  gEfiMdeModulePkgTokenSpaceGuid.PcdConInConnectOnDemand|TRUE
 
 [PcdsDynamicHii]
 !include OvmfPkg/Include/Dsc/OvmfTpmPcdsHii.dsc.inc

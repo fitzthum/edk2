@@ -15,6 +15,8 @@
 #include <Library/CcExitLib.h>
 #include <Register/Amd/Fam17Msr.h>
 #include <Register/Amd/Ghcb.h>
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 #include <Protocol/Timer.h>
 
@@ -463,7 +465,8 @@ MpInitChangeApLoopCallback (
       );
   }
 
-  DEBUG ((DEBUG_INFO, "%a() done!\n", __func__));
+  UINT64 ticks = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "%a() done! TICKS=%" PRIu64 "\n", __func__, ticks));
 }
 
 /**

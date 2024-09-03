@@ -22,8 +22,10 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Library/VirtioLib.h>
+#include <Library/TimerLib.h>
 
 #include "VirtioRng.h"
+#include <inttypes.h>
 
 /**
   Returns information about the random number generation implementation.
@@ -69,6 +71,7 @@ VirtioRngGetInfo (
   OUT     EFI_RNG_ALGORITHM  *RNGAlgorithmList
   )
 {
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngGetInfo TICKS=0\n"));
   if ((This == NULL) || (RNGAlgorithmListSize == NULL)) {
     return EFI_INVALID_PARAMETER;
   }
@@ -137,6 +140,8 @@ VirtioRngGetRNG (
   EFI_PHYSICAL_ADDRESS  DeviceAddress;
   VOID                  *Mapping;
 
+  UINT64 ticks34 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngGetRNG TICKS=%" PRIu64 "\n", ticks34));
   if ((This == NULL) || (RNGValueLength == 0) || (RNGValue == NULL)) {
     return EFI_INVALID_PARAMETER;
   }
@@ -241,6 +246,8 @@ VirtioRngInit (
   UINT16      QueueSize;
   UINT64      Features;
   UINT64      RingBaseShift;
+
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngInit TICKS=0\n"));
 
   //
   // Execute virtio-0.9.5, 2.2.1 Device Initialization Sequence.
@@ -474,6 +481,9 @@ VirtioRngDriverBindingSupported (
   EFI_STATUS              Status;
   VIRTIO_DEVICE_PROTOCOL  *VirtIo;
 
+  UINT64 ticks35 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngDriverBindingSupported DeviceHandle=%" PRIu64 " TICKS=%" PRIu64 "\n", DeviceHandle, ticks35));
+  //DEBUG((DEBUG_PROFILE, "RustyT VirtioRngDriverBindingSupported PathType=%" PRIu8 " PathSubType=%" PRIu8 " PathLen[0]=%" PRIu8 " TICKS=%" PRIu64 "\n", RemainingDevicePath->Type, RemainingDevicePath->SubType, RemainingDevicePath->Length[0], ticks35));
   //
   // Attempt to open the device with the VirtIo set of interfaces. On success,
   // the protocol is "instantiated" for the VirtIo device. Covers duplicate
@@ -489,11 +499,16 @@ VirtioRngDriverBindingSupported (
                   EFI_OPEN_PROTOCOL_BY_DRIVER // get exclusive VirtIo access to
                                               // the device; to be released
                   );
+  UINT64 ticks36 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngDriverBindingSupported after open TICKS=%" PRIu64 "\n", ticks36));
+
   if (EFI_ERROR (Status)) {
+    DEBUG((DEBUG_PROFILE, "RustyT failed to connect virtio TICKS=0\n"));
     return Status;
   }
 
   if (VirtIo->SubSystemDeviceId != VIRTIO_SUBSYSTEM_ENTROPY_SOURCE) {
+    DEBUG((DEBUG_PROFILE, "RustyT device not VIRTIO ENTROPY TICKS=0\n"));
     Status = EFI_UNSUPPORTED;
   }
 
@@ -507,6 +522,10 @@ VirtioRngDriverBindingSupported (
          This->DriverBindingHandle,
          DeviceHandle
          );
+  UINT64 ticks37 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngDriverBindingSupported after close TICKS=%" PRIu64 "\n", ticks37));
+
+
   return Status;
 }
 
@@ -522,6 +541,7 @@ VirtioRngDriverBindingStart (
   VIRTIO_RNG_DEV  *Dev;
   EFI_STATUS      Status;
 
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngInit TICKS=0\n"));
   Dev = (VIRTIO_RNG_DEV *)AllocateZeroPool (sizeof *Dev);
   if (Dev == NULL) {
     return EFI_OUT_OF_RESOURCES;
@@ -739,6 +759,7 @@ VirtioRngEntryPoint (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
+  DEBUG((DEBUG_PROFILE, "RustyT VirtioRngEntry TICKS=0\n"));
   return EfiLibInstallDriverBindingComponentName2 (
            ImageHandle,
            SystemTable,

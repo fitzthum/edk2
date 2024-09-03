@@ -8,6 +8,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "IScsiImpl.h"
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 GLOBAL_REMOVE_IF_UNREFERENCED CONST CHAR8  IScsiHexString[] = "0123456789ABCDEFabcdef";
 
@@ -823,6 +825,8 @@ IScsiCreateAttempts (
   EFI_STATUS                   Status;
 
   for (Index = 1; Index <= AttemptNum; Index++) {
+    DEBUG((DEBUG_PROFILE, "scsi begin create attempts loop TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
     //
     // Get the initialized attempt order. This is used to essure creating attempts by order.
     //
@@ -839,6 +843,8 @@ IScsiCreateAttempts (
 
     TotalNumber++;
 
+    DEBUG((DEBUG_PROFILE, "scsi after incrementing total number TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
     //
     // Append the new created attempt to the end.
     //
@@ -851,10 +857,14 @@ IScsiCreateAttempts (
       return EFI_OUT_OF_RESOURCES;
     }
 
+    DEBUG((DEBUG_PROFILE, "scsi bad after allocate pool TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
     if (AttemptConfigOrder != NULL) {
       CopyMem (AttemptOrderTmp, AttemptConfigOrder, AttemptConfigOrderSize);
       FreePool (AttemptConfigOrder);
     }
+
+    DEBUG((DEBUG_PROFILE, "scsi bad copy mem TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
     AttemptOrderTmp[TotalNumber - 1] = Index;
     AttemptConfigOrder               = AttemptOrderTmp;
@@ -867,6 +877,9 @@ IScsiCreateAttempts (
                     AttemptConfigOrderSize,
                     AttemptConfigOrder
                     );
+
+
+    DEBUG((DEBUG_PROFILE, "scsi bad set variable TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     FreePool (AttemptConfigOrder);
     if (EFI_ERROR (Status)) {
       DEBUG ((
@@ -879,6 +892,8 @@ IScsiCreateAttempts (
         ));
       return Status;
     }
+
+    DEBUG((DEBUG_PROFILE, "scsi after appending attempt TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
     //
     // Create new Attempt
@@ -895,6 +910,8 @@ IScsiCreateAttempts (
 
     AttemptConfigData->AuthenticationType           = ISCSI_AUTH_TYPE_CHAP;
     AttemptConfigData->AuthConfigData.CHAP.CHAPType = ISCSI_CHAP_UNI;
+
+    DEBUG((DEBUG_PROFILE, "scsi after create new attempt TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     //
     // Configure the Attempt index and set variable.
     //
@@ -911,6 +928,8 @@ IScsiCreateAttempts (
       );
     UnicodeStrToAsciiStrS (mPrivate->PortString, AttemptConfigData->AttemptName, ATTEMPT_NAME_SIZE);
 
+    DEBUG((DEBUG_PROFILE, "scsi after unicodesprint TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
     Status = gRT->SetVariable (
                     mPrivate->PortString,
                     &gEfiIScsiInitiatorNameProtocolGuid,
@@ -918,6 +937,9 @@ IScsiCreateAttempts (
                     sizeof (ISCSI_ATTEMPT_CONFIG_NVDATA),
                     AttemptConfigData
                     );
+
+    DEBUG((DEBUG_PROFILE, "scsi after setvariable TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
     FreePool (AttemptConfigData);
     if (EFI_ERROR (Status)) {
       DEBUG ((

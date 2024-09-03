@@ -67,6 +67,7 @@
   DebugAgentLib
   PeiServicesTablePointerLib
   PerformanceLib
+  TimerLib
 
 [Ppis]
   gEfiDxeIplPpiGuid                      ## PRODUCES

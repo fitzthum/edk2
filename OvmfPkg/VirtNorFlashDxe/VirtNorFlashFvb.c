@@ -734,6 +734,7 @@ FvbWrite (
   )
 {
   NOR_FLASH_INSTANCE  *Instance;
+  DEBUG((DEBUG_PROFILE, "fvb virtnor\n"));
 
   Instance = INSTANCE_FROM_FVB_THIS (This);
 

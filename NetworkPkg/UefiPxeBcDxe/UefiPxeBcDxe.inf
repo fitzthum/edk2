@@ -62,6 +62,7 @@
   DpcLib
   DevicePathLib
   PcdLib
+  TimerLib
 
 [Protocols]
   ## TO_START

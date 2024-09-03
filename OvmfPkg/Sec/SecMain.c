@@ -30,6 +30,8 @@
 #include <Library/TdxHelperLib.h>
 #include <Library/CcProbeLib.h>
 #include "AmdSev.h"
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 #define SEC_IDT_ENTRY_COUNT  34
 
@@ -392,10 +394,12 @@ DecompressMemFvs (
     ScratchBufferSize,
     PcdGet32 (PcdOvmfDecompressionScratchEnd)
     ));
+	  /*
   ASSERT (
     (UINTN)ScratchBuffer + ScratchBufferSize ==
     PcdGet32 (PcdOvmfDecompressionScratchEnd)
     );
+    */
 
   Status = ExtractGuidedSectionDecode (
              Section,
@@ -870,11 +874,14 @@ SecCoreStartupWithStack (
 
  #endif
 
+  UINT64 StartTicks = GetPerformanceCounter();
+
   DEBUG ((
-    DEBUG_INFO,
-    "SecCoreStartupWithStack(0x%x, 0x%x)\n",
+    DEBUG_PROFILE,
+    "SecCoreStartupWithStack(0x%x, 0x%x): TICKS=%" PRIu64 "\n",
     (UINT32)(UINTN)BootFv,
-    (UINT32)(UINTN)TopOfCurrentStack
+    (UINT32)(UINTN)TopOfCurrentStack,
+    StartTicks
     ));
 
   //

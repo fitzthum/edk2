@@ -340,6 +340,7 @@ FvbWriteBlock (
   UINTN                 LbaLength;
   EFI_STATUS            Status;
 
+  DEBUG((DEBUG_PROFILE, "enter fvbwriteblock"));
   if ((NumBytes == NULL) || (Buffer == NULL)) {
     return (EFI_INVALID_PARAMETER);
   }
@@ -813,7 +814,7 @@ FvbProtocolWrite (
   FvbDevice = FVB_DEVICE_FROM_THIS (This);
   Status    = FvbWriteBlock (FvbDevice->Instance, Lba, Offset, NumBytes, Buffer);
   DEBUG ((
-    DEBUG_VERBOSE,
+    DEBUG_PROFILE,
     "FvbWrite: Lba: 0x%lx Offset: 0x%x NumBytes: 0x%x, Buffer: 0x%x Status:%r\n",
     Lba,
     Offset,

@@ -482,6 +482,7 @@ Returns:
   UINTN                 LbaLength;
   EFI_STATUS            Status;
 
+  DEBUG((DEBUG_PROFILE, "emupackage fvbwrite\n"));
   //
   // Check for invalid conditions
   //

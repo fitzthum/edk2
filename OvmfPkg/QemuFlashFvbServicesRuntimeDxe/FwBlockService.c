@@ -749,6 +749,7 @@ FvbProtocolWrite (
 
 --*/
 {
+  DEBUG((DEBUG_PROFILE, "qemu fvb write \n"));
   return QemuFlashWrite (
            (EFI_LBA)Lba,
            (UINTN)Offset,
@@ -983,7 +984,7 @@ FvbInitialize (
     // Return an error so image will be unloaded
     //
     DEBUG ((
-      DEBUG_INFO,
+      DEBUG_PROFILE,
       "QEMU flash was not detected. Writable FVB is not being installed.\n"
       ));
     return EFI_WRITE_PROTECTED;
@@ -1002,7 +1003,7 @@ FvbInitialize (
   Status = InitializeVariableFvHeader ();
   if (EFI_ERROR (Status)) {
     DEBUG ((
-      DEBUG_INFO,
+      DEBUG_PROFILE,
       "QEMU Flash: Unable to initialize variable FV header\n"
       ));
     return EFI_WRITE_PROTECTED;
@@ -1016,7 +1017,7 @@ FvbInitialize (
     //
     Status = GetFvbInfo (Length, &FwVolHeader);
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_INFO, "EFI_ERROR (GetFvbInfo (Length, &FwVolHeader))\n"));
+      DEBUG ((DEBUG_PROFILE, "EFI_ERROR (GetFvbInfo (Length, &FwVolHeader))\n"));
       return EFI_WRITE_PROTECTED;
     }
   }
@@ -1131,5 +1132,7 @@ FvbInitialize (
 
   PcdStatus = PcdSetBoolS (PcdOvmfFlashVariablesEnable, TRUE);
   ASSERT_RETURN_ERROR (PcdStatus);
+
+  DEBUG((DEBUG_PROFILE, "END OF INITFVBQEMU\n"));
   return EFI_SUCCESS;
 }

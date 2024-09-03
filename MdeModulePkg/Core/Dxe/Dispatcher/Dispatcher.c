@@ -32,6 +32,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "DxeMain.h"
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 //
 // The Driver List contains one copy of every driver that has been discovered.
@@ -433,10 +435,12 @@ CoreDispatcher (
 
   ReturnStatus = EFI_NOT_FOUND;
   do {
+    DEBUG((DEBUG_PROFILE, "dispatch start of outer loop \n"));
     //
     // Drain the Scheduled Queue
     //
     while (!IsListEmpty (&mScheduledQueue)) {
+      DEBUG((DEBUG_PROFILE, "dispatch start of inner loop \n"));
       DriverEntry = CR (
                       mScheduledQueue.ForwardLink,
                       EFI_CORE_DRIVER_ENTRY,
@@ -450,7 +454,7 @@ CoreDispatcher (
       // skip the LoadImage
       //
       if ((DriverEntry->ImageHandle == NULL) && !DriverEntry->IsFvImage) {
-        DEBUG ((DEBUG_INFO, "Loading driver %g\n", &DriverEntry->FileName));
+        DEBUG ((DEBUG_PROFILE, "Loading driver %g\n", &DriverEntry->FileName));
         Status = CoreLoadImage (
                    FALSE,
                    gDxeCoreImageHandle,
@@ -515,7 +519,12 @@ CoreDispatcher (
           );
         ASSERT (DriverEntry->ImageHandle != NULL);
 
+	// ARE THE TICKS HERE???
+	UINT64 ticks2 = GetPerformanceCounter();
+        DEBUG ((DEBUG_PROFILE, "About to call CoreStartImage %g TICKS=%" PRIu64 "\n", &DriverEntry->FileName, ticks2));
         Status = CoreStartImage (DriverEntry->ImageHandle, NULL, NULL);
+	UINT64 ticks3 = GetPerformanceCounter();
+        DEBUG ((DEBUG_PROFILE, "After calling CoreStartImage %g TICKS=%" PRIu64 "\n", &DriverEntry->FileName, ticks3));
 
         REPORT_STATUS_CODE_WITH_EXTENDED_DATA (
           EFI_PROGRESS_CODE,
@@ -552,15 +561,17 @@ CoreDispatcher (
       }
 
       if (DriverEntry->Dependent) {
+
+        DEBUG ((DEBUG_PROFILE, "Queue up(%g)\n", &DriverEntry->FileName));
         if (CoreIsSchedulable (DriverEntry)) {
           CoreInsertOnScheduledQueueWhileProcessingBeforeAndAfter (DriverEntry);
           ReadyToRun = TRUE;
         }
       } else {
         if (DriverEntry->Unrequested) {
-          DEBUG ((DEBUG_DISPATCH, "Evaluate DXE DEPEX for FFS(%g)\n", &DriverEntry->FileName));
-          DEBUG ((DEBUG_DISPATCH, "  SOR                                             = Not Requested\n"));
-          DEBUG ((DEBUG_DISPATCH, "  RESULT = FALSE\n"));
+          DEBUG ((DEBUG_PROFILE, "Evaluate DXE DEPEX for FFS(%g)\n", &DriverEntry->FileName));
+          DEBUG ((DEBUG_PROFILE, "  SOR                                             = Not Requested\n"));
+          DEBUG ((DEBUG_PROFILE, "  RESULT = FALSE\n"));
         }
       }
     }

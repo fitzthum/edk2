@@ -441,7 +441,8 @@ DxeLoadCore (
   //
   REPORT_STATUS_CODE (EFI_PROGRESS_CODE, (EFI_SOFTWARE_PEI_CORE | EFI_SW_PEI_CORE_PC_HANDOFF_TO_NEXT));
 
-  DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Loading DXE CORE at 0x%11p EntryPoint=0x%11p\n", (VOID *)(UINTN)DxeCoreAddress, FUNCTION_ENTRY_POINT (DxeCoreEntryPoint)));
+  UINT64 ticks = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "Loading DXE CORE at 0x%11p EntryPoint=0x%11p TICKS=%" PRIu64 "\n", (VOID *)(UINTN)DxeCoreAddress, FUNCTION_ENTRY_POINT (DxeCoreEntryPoint),ticks));
 
   //
   // Transfer control to the DXE Core

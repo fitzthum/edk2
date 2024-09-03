@@ -8,6 +8,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include "DxeMain.h"
 #include "Handle.h"
+#include <inttypes.h>
 
 //
 // mProtocolDatabase     - A list of all protocols in the system.  (simple list for now)
@@ -1617,6 +1618,7 @@ CoreConnectHandlesByKey (
   // Connect all handles whose Key value is greater than Key
   //
   for (Index = 0; Index < Count; Index++) {
+    DEBUG((DEBUG_PROFILE, "About to connect controller %" PRIu64 "\n", HandleBuffer[Index]));
     CoreConnectController (HandleBuffer[Index], NULL, NULL, TRUE);
   }
 

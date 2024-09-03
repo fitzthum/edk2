@@ -451,6 +451,9 @@ PlatformBootManagerBeforeConsole (
   //
   EfiEventGroupSignal (&gEfiEndOfDxeEventGroupGuid);
 
+  // AFTER THIS!!!
+  //
+
   if (PcdGetBool (PcdAcpiS3Enable)) {
     //
     // Save the boot script too. Note that this will require us to emit the
@@ -470,6 +473,9 @@ PlatformBootManagerBeforeConsole (
   PlatformInitializeConsole (
     (XenDetected () || PcdGet16 (PcdOvmfHostBridgePciDevId) == CLOUDHV_DEVICE_ID) ? gXenPlatformConsole : gPlatformConsole
     );
+
+  // BEFORE THIS
+  //
 
   //
   // Process TPM PPI request; this may require keyboard input

@@ -7,6 +7,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "InternalBm.h"
+#include <inttypes.h>
 
 /**
   Connect all the drivers to all the controllers.
@@ -116,6 +117,7 @@ EfiBootManagerConnectDevicePath (
   EFI_HANDLE                PreviousHandle;
   EFI_TPL                   CurrentTpl;
 
+  DEBUG((DEBUG_PROFILE, "start of ConnectDevicePath\n"));
   if (DevicePathToConnect == NULL) {
     return EFI_INVALID_PARAMETER;
   }
@@ -126,6 +128,7 @@ EfiBootManagerConnectDevicePath (
   //
   PreviousHandle = NULL;
   do {
+    DEBUG((DEBUG_PROFILE, "start of ConnectDevicePath loop\n"));
     //
     // Find the handle that best matches the Device Path. If it is only a
     // partial match the remaining part of the device path is returned in
@@ -134,6 +137,7 @@ EfiBootManagerConnectDevicePath (
     RemainingDevicePath = DevicePathToConnect;
     Status              = gBS->LocateDevicePath (&gEfiDevicePathProtocolGuid, &RemainingDevicePath, &Handle);
     if (!EFI_ERROR (Status)) {
+      DEBUG((DEBUG_PROFILE, "After LocateDevicePath handle=%" PRIu64 "\n", Handle));
       if (Handle == PreviousHandle) {
         //
         // If no forward progress is made try invoking the Dispatcher.
@@ -143,6 +147,7 @@ EfiBootManagerConnectDevicePath (
         // Status == EFI_NOT_FOUND means no new drivers were dispatched
         //
         if (CurrentTpl == TPL_APPLICATION) {
+	  DEBUG((DEBUG_PROFILE, "dispatching\n"));
           Status = gDS->Dispatch ();
         } else {
           //
@@ -169,6 +174,7 @@ EfiBootManagerConnectDevicePath (
         //    change, then avoid the dispatch, we have chance to continue the
         //    next connection
         //
+	DEBUG((DEBUG_PROFILE, "calling ConnectController\n"));
         Status = gBS->ConnectController (Handle, NULL, RemainingDevicePath, FALSE);
         if (Status == EFI_NOT_FOUND) {
           Status = EFI_SUCCESS;

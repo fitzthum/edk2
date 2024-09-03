@@ -10,6 +10,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "IScsiImpl.h"
+#include <Library/TimerLib.h>
+#include <inttypes.h> 
 
 EFI_DRIVER_BINDING_PROTOCOL  gIScsiIp4DriverBinding = {
   IScsiIp4DriverBindingSupported,
@@ -257,6 +259,8 @@ IScsiSupported (
   EFI_GUID    *DhcpServiceBindingGuid;
   EFI_GUID    *DnsServiceBindingGuid;
 
+  DEBUG((DEBUG_PROFILE, "ISCSI Supported\n"));
+
   if (IpVersion == IP_VERSION_4) {
     IScsiServiceBindingGuid = &gIScsiV4PrivateGuid;
     TcpServiceBindingGuid   = &gEfiTcp4ServiceBindingProtocolGuid;
@@ -377,6 +381,8 @@ IScsiStart (
   EFI_GUID                         *ProtocolGuid;
   UINT8                            NetworkBootPolicy;
   ISCSI_SESSION_CONFIG_NVDATA      *NvData;
+
+  DEBUG((DEBUG_PROFILE, "ISCSI Start\n"));
 
   //
   // Test to see if iSCSI driver supports the given controller.
@@ -1740,6 +1746,8 @@ IScsiDriverEntryPoint (
   EFI_ISCSI_INITIATOR_NAME_PROTOCOL  *IScsiInitiatorName;
   EFI_AUTHENTICATION_INFO_PROTOCOL   *AuthenticationInfo;
 
+  UINT64 ticks1 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "ISCSI DriverEntryPoint TICKS=%" PRIu64 "\n", ticks1));
   //
   // There should be only one EFI_ISCSI_INITIATOR_NAME_PROTOCOL.
   //
@@ -1752,6 +1760,9 @@ IScsiDriverEntryPoint (
     return EFI_ACCESS_DENIED;
   }
 
+  UINT64 ticks4 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "scsi after checking initiator TICKS=%" PRIu64 "\n", ticks4));
+ 
   //
   // Initialize the EFI Driver Library.
   //
@@ -1767,6 +1778,10 @@ IScsiDriverEntryPoint (
     return Status;
   }
 
+  UINT64 ticks5 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "scsi after init efi driver TICKS=%" PRIu64 "\n", ticks5));
+ 
+
   Status = EfiLibInstallDriverBindingComponentName2 (
              ImageHandle,
              SystemTable,
@@ -1778,6 +1793,8 @@ IScsiDriverEntryPoint (
   if (EFI_ERROR (Status)) {
     goto Error1;
   }
+
+  DEBUG((DEBUG_PROFILE, "scsi installdriverbindinglib2 part2 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
   //
   // Install the iSCSI Initiator Name Protocol.
@@ -1792,10 +1809,13 @@ IScsiDriverEntryPoint (
     goto Error2;
   }
 
+  DEBUG((DEBUG_PROFILE, "scsi install initiator name protocol TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Create the private data structures.
   //
   IScsiCHAPInitHashList ();
+
+  DEBUG((DEBUG_PROFILE, "scsi after CHAP Init hashes TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
   mPrivate = AllocateZeroPool (sizeof (ISCSI_PRIVATE_DATA));
   if (mPrivate == NULL) {
@@ -1806,6 +1826,7 @@ IScsiDriverEntryPoint (
   InitializeListHead (&mPrivate->NicInfoList);
   InitializeListHead (&mPrivate->AttemptConfigs);
 
+  DEBUG((DEBUG_PROFILE, "scsi after init other strctures TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Initialize the configuration form of iSCSI.
   //
@@ -1814,14 +1835,18 @@ IScsiDriverEntryPoint (
     goto Error4;
   }
 
+  DEBUG((DEBUG_PROFILE, "scsi after configforminit TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
   //
   // Create the Maximum Attempts.
   //
-  Status = IScsiCreateAttempts (PcdGet8 (PcdMaxIScsiAttemptNumber));
+  //Status = IScsiCreateAttempts (PcdGet8 (PcdMaxIScsiAttemptNumber));
+  Status = IScsiCreateAttempts (1);
   if (EFI_ERROR (Status)) {
     goto Error5;
   }
 
+  DEBUG((DEBUG_PROFILE, "scsi after createattempts TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Create Keywords for all the Attempts.
   //
@@ -1830,6 +1855,7 @@ IScsiDriverEntryPoint (
     goto Error6;
   }
 
+  DEBUG((DEBUG_PROFILE, "scsi after createkeywords TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // There should be only one EFI_AUTHENTICATION_INFO_PROTOCOL. If already exists,
   // do not produce the protocol instance.
@@ -1851,6 +1877,8 @@ IScsiDriverEntryPoint (
     }
   }
 
+  UINT64 ticks2 = GetPerformanceCounter();
+  DEBUG((DEBUG_PROFILE, "scsi entry success TICKS=%" PRIu64 "\n", ticks2));
   return EFI_SUCCESS;
 
 Error6:

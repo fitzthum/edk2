@@ -7,6 +7,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "DxeMain.h"
+#include <inttypes.h>
+#include <Library/TimerLib.h>
 
 //
 // DXE Core Global Variables for Protocols from PEI
@@ -270,12 +272,18 @@ DxeMain (
   InitializeDebugAgent (DEBUG_AGENT_INIT_DXE_CORE, HobStart, NULL);
 
   //
+  // Log MemoryBaseAddress and MemoryLength again (from
+  // CoreInitializeMemoryServices()), now that library constructors have
+  // executed.
+  //
+  //
   // Initialize Memory Services
   //
   CoreInitializeMemoryServices (&HobStart, &MemoryBaseAddress, &MemoryLength);
 
   MemoryProfileInit (HobStart);
 
+  
   //
   // Start the Image Services.
   //
@@ -305,6 +313,17 @@ DxeMain (
   //
   gDxeCoreLoadedImage->SystemTable = gDxeCoreST;
 
+  UINT64 ticks = GetPerformanceCounter();
+  DEBUG ((
+    DEBUG_PROFILE,
+    "%a: EekDxeMain1 MemoryBaseAddress=0x%Lx MemoryLength=0x%Lx TICKS=%" PRIu64 "\n",
+    __func__,
+    MemoryBaseAddress,
+    MemoryLength,
+    ticks
+    ));
+
+
   //
   // Call constructor for all libraries
   //
@@ -317,12 +336,14 @@ DxeMain (
   // CoreInitializeMemoryServices()), now that library constructors have
   // executed.
   //
+  UINT64 ticks2 = GetPerformanceCounter();
   DEBUG ((
-    DEBUG_INFO,
-    "%a: MemoryBaseAddress=0x%Lx MemoryLength=0x%Lx\n",
+    DEBUG_PROFILE,
+    "%a: EekDxeMain2 MemoryBaseAddress=0x%Lx MemoryLength=0x%Lx TICKS=%" PRIu64 "\n",
     __func__,
     MemoryBaseAddress,
-    MemoryLength
+    MemoryLength,
+    ticks2
     ));
 
   //
@@ -573,6 +594,17 @@ DxeMain (
     EFI_PROGRESS_CODE,
     (EFI_SOFTWARE_DXE_CORE | EFI_SW_DXE_CORE_PC_HANDOFF_TO_NEXT)
     );
+
+  UINT64 ticks3 = GetPerformanceCounter();
+  DEBUG ((
+    DEBUG_PROFILE,
+    "%a: EekDxeMain3 MemoryBaseAddress=0x%Lx MemoryLength=0x%Lx TICKS=%" PRIu64 "\n",
+    __func__,
+    MemoryBaseAddress,
+    MemoryLength,
+    ticks3
+    ));
+
 
   //
   // Transfer control to the BDS Architectural Protocol

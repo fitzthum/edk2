@@ -140,7 +140,7 @@ SecCoreStartupWithStack (
   }
 
   DEBUG ((
-    DEBUG_INFO,
+    DEBUG_PROFILE,
     "SecCoreStartupWithStack(0x%x, 0x%x)\n",
     (UINT32)(UINTN)BootFv,
     (UINT32)(UINTN)TopOfCurrentStack

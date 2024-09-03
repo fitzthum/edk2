@@ -444,6 +444,8 @@ FvbProtocolWrite (
   UINT8                    *FvbDataPtr;
   EFI_STATUS               Status;
 
+  DEBUG((DEBUG_PROFILE, "start FvbProtocolWrite"));
+
   FvbDevice = FVB_DEVICE_FROM_THIS (This);
 
   if ((Lba >= EMU_FVB_NUM_TOTAL_BLOCKS) ||
@@ -462,6 +464,7 @@ FvbProtocolWrite (
   FvbDataPtr += (UINTN)Lba * FvbDevice->BlockSize;
   FvbDataPtr += Offset;
 
+  return Status;
   CopyMem (FvbDataPtr, Buffer, *NumBytes);
   PlatformFvbDataWritten (This, Lba, Offset, *NumBytes, Buffer);
   return Status;

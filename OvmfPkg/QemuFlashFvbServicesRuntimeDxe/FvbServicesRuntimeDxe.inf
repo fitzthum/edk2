@@ -54,6 +54,7 @@
   UefiDriverEntryPoint
   UefiRuntimeLib
   CcExitLib
+  TimerLib
 
 [Guids]
   gEfiEventVirtualAddressChangeGuid   # ALWAYS_CONSUMED

@@ -29,6 +29,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include "VariableNonVolatile.h"
 #include "VariableParsing.h"
 #include "VariableRuntimeCache.h"
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 VARIABLE_MODULE_GLOBAL  *mVariableModuleGlobal;
 
@@ -146,6 +148,7 @@ UpdateVariableStore (
   FvVolHdr = 0;
   DataPtr  = DataPtrIndex;
 
+  DEBUG((DEBUG_PROFILE, "update variable store start TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Check if the Data is Volatile.
   //
@@ -168,6 +171,8 @@ UpdateVariableStore (
     if ((DataPtr + DataSize) > (FvVolHdr + mNvFvHeaderCache->FvLength)) {
       return EFI_OUT_OF_RESOURCES;
     }
+
+    DEBUG((DEBUG_PROFILE, "update variable store after first volatile case TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   } else {
     //
     // Data Pointer should point to the actual Address where data is to be
@@ -193,12 +198,17 @@ UpdateVariableStore (
       if ((DataPtr + DataSize) > ((UINTN)mNvVariableCache + mNvVariableCache->Size)) {
         return EFI_OUT_OF_RESOURCES;
       }
+
+      DEBUG((DEBUG_PROFILE, "update variable store after second volatile case TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     }
 
+    DEBUG((DEBUG_PROFILE, "update variable store after volatile check case TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     //
     // If Volatile/Emulated Non-volatile Variable just do a simple mem copy.
     //
     CopyMem ((UINT8 *)(UINTN)DataPtr, Buffer, DataSize);
+    
+    DEBUG((DEBUG_PROFILE, "update variable store after copy mem TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     return EFI_SUCCESS;
   }
 
@@ -215,8 +225,11 @@ UpdateVariableStore (
     return EFI_INVALID_PARAMETER;
   }
 
+  DEBUG((DEBUG_PROFILE, "update variable store before loop mem TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   for (PtrBlockMapEntry = mNvFvHeaderCache->BlockMap; PtrBlockMapEntry->NumBlocks != 0; PtrBlockMapEntry++) {
+    DEBUG((DEBUG_PROFILE, "update variable store start of outer loop TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     for (BlockIndex2 = 0; BlockIndex2 < PtrBlockMapEntry->NumBlocks; BlockIndex2++) {
+      DEBUG((DEBUG_PROFILE, "update variable store start of inner loop TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
       //
       // Check to see if the Variable Writes are spanning through multiple
       // blocks.
@@ -230,6 +243,8 @@ UpdateVariableStore (
                           &CurrWriteSize,
                           CurrBuffer
                           );
+
+          DEBUG((DEBUG_PROFILE, "update variable store after fvb write 1 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
           return Status;
         } else {
           Size   = (UINT32)(LinearOffset + PtrBlockMapEntry->Length - CurrWritePtr);
@@ -240,7 +255,10 @@ UpdateVariableStore (
                           &Size,
                           CurrBuffer
                           );
+
+          DEBUG((DEBUG_PROFILE, "update variable store after fvb write 2 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
           if (EFI_ERROR (Status)) {
+            DEBUG((DEBUG_PROFILE, "update variable store after fvb write 2 error TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
             return Status;
           }
 
@@ -254,6 +272,8 @@ UpdateVariableStore (
       LbaNumber++;
     }
   }
+  
+  DEBUG((DEBUG_PROFILE, "update variable store after big loop TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
   return EFI_SUCCESS;
 }
@@ -1711,6 +1731,7 @@ UpdateVariable (
   AUTHENTICATED_VARIABLE_HEADER       *AuthVariable;
   BOOLEAN                             AuthFormat;
 
+  DEBUG((DEBUG_PROFILE, "update1 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   if ((mVariableModuleGlobal->FvbInstance == NULL) && !mVariableModuleGlobal->VariableGlobal.EmuNvMode) {
     //
     // The FVB protocol is not ready, so the EFI_VARIABLE_WRITE_ARCH_PROTOCOL is not installed.
@@ -1732,6 +1753,7 @@ UpdateVariable (
   }
 
   AuthFormat = mVariableModuleGlobal->VariableGlobal.AuthFormat;
+  DEBUG((DEBUG_PROFILE, "update2 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
   //
   // Check if CacheVariable points to the variable in variable HOB.
@@ -1763,6 +1785,8 @@ UpdateVariable (
     }
   }
 
+
+  DEBUG((DEBUG_PROFILE, "update3 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   if ((CacheVariable->CurrPtr == NULL) || CacheVariable->Volatile) {
     Variable = CacheVariable;
   } else {
@@ -1788,6 +1812,8 @@ UpdateVariable (
 
   Fvb = mVariableModuleGlobal->FvbInstance;
 
+
+  DEBUG((DEBUG_PROFILE, "update4 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Tricky part: Use scratch data area at the end of volatile variable store
   // as a temporary storage.
@@ -2017,6 +2043,10 @@ UpdateVariable (
     }
   }
 
+
+
+  DEBUG((DEBUG_PROFILE, "update5 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
   //
   // Function part - create a new variable and copy the data.
   // Both update a variable and create a variable will come here.
@@ -2054,6 +2084,8 @@ UpdateVariable (
     }
   }
 
+
+  DEBUG((DEBUG_PROFILE, "update6 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // The EFI_VARIABLE_APPEND_WRITE attribute will never be set in the returned
   // Attributes bitmask parameter of a GetVariable() call.
@@ -2094,6 +2126,8 @@ UpdateVariable (
   SetNameSizeOfVariable (NextVariable, VarNameSize, AuthFormat);
   SetDataSizeOfVariable (NextVariable, DataSize, AuthFormat);
 
+
+  DEBUG((DEBUG_PROFILE, "update7 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // The actual size of the variable that stores in storage should
   // include pad size.
@@ -2185,6 +2219,8 @@ UpdateVariable (
                  (UINT8 *)NextVariable
                  );
 
+
+      DEBUG((DEBUG_PROFILE, "after updatevariablestore TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
       if (EFI_ERROR (Status)) {
         goto Done;
       }
@@ -2203,6 +2239,7 @@ UpdateVariable (
                               &NextVariable->State
                               );
 
+      DEBUG((DEBUG_PROFILE, "after updatevariablestore 2 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
       if (EFI_ERROR (Status)) {
         goto Done;
       }
@@ -2211,10 +2248,12 @@ UpdateVariable (
       // Update the memory copy of Flash region.
       //
       CopyMem ((UINT8 *)mNvVariableCache + mVariableModuleGlobal->NonVolatileLastVariableOffset, (UINT8 *)NextVariable, VarSize);
+      DEBUG((DEBUG_PROFILE, "after copymem TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     } else {
       //
       // Emulated non-volatile variable mode.
       //
+      DEBUG((DEBUG_PROFILE, "emulated nv TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
       NextVariable->State = VAR_ADDED;
       Status              = UpdateVariableStore (
                               &mVariableModuleGlobal->VariableGlobal,
@@ -2294,6 +2333,8 @@ UpdateVariable (
     mVariableModuleGlobal->VolatileLastVariableOffset += HEADER_ALIGN (VarSize);
   }
 
+
+  DEBUG((DEBUG_PROFILE, "update8 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Mark the old variable as deleted.
   //
@@ -2348,6 +2389,8 @@ UpdateVariable (
     }
   }
 
+
+  DEBUG((DEBUG_PROFILE, "update9 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 Done:
   if (!EFI_ERROR (Status)) {
     if (((Variable->CurrPtr != NULL) && !Variable->Volatile) || ((Attributes & EFI_VARIABLE_NON_VOLATILE) != 0)) {
@@ -2366,6 +2409,7 @@ Done:
     }
   }
 
+  DEBUG((DEBUG_PROFILE, "end TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   return Status;
 }
 
@@ -2622,6 +2666,8 @@ VariableServiceSetVariable (
   UINTN                   PayloadSize;
   BOOLEAN                 AuthFormat;
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable start TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
   AuthFormat = mVariableModuleGlobal->VariableGlobal.AuthFormat;
 
   //
@@ -2682,6 +2728,7 @@ VariableServiceSetVariable (
     }
   }
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable after checks TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS and EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS attribute
   // cannot be set both.
@@ -2713,12 +2760,14 @@ VariableServiceSetVariable (
       return EFI_SECURITY_VIOLATION;
     }
 
+    DEBUG((DEBUG_PROFILE, "variable service set variable after more checks TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     //
     // The VariableSpeculationBarrier() call here is to ensure the above sanity
     // check for the EFI_VARIABLE_AUTHENTICATION_2 descriptor has been completed
     // before the execution of subsequent codes.
     //
     VariableSpeculationBarrier ();
+    DEBUG((DEBUG_PROFILE, "variable service set variable after speculation barrier TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     PayloadSize = DataSize - AUTHINFO2_SIZE (Data);
   } else {
     PayloadSize = DataSize;
@@ -2817,6 +2866,8 @@ VariableServiceSetVariable (
     }
   }
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable after more checks part 2 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
+
   //
   // Special Handling for MOR Lock variable.
   //
@@ -2828,6 +2879,7 @@ VariableServiceSetVariable (
     //
     return EFI_SUCCESS;
   }
+  DEBUG((DEBUG_PROFILE, "variable service set variable after check handler mor TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
 
   if (EFI_ERROR (Status)) {
     return Status;
@@ -2840,6 +2892,7 @@ VariableServiceSetVariable (
 
   AcquireLockOnlyAtBootTime (&mVariableModuleGlobal->VariableGlobal.VariableServicesLock);
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable after aqcuire boottime lock  TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Consider reentrant in MCA/INIT/NMI. It needs be reupdated.
   //
@@ -2856,13 +2909,16 @@ VariableServiceSetVariable (
     mVariableModuleGlobal->NonVolatileLastVariableOffset = (UINTN)NextVariable - (UINTN)Point;
   }
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable after nmi stuff TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   //
   // Check whether the input variable is already existed.
   //
   Status = FindVariable (VariableName, VendorGuid, &Variable, &mVariableModuleGlobal->VariableGlobal, TRUE);
+  DEBUG((DEBUG_PROFILE, "variable service set variable after find var TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   if (!EFI_ERROR (Status)) {
     if (((Variable.CurrPtr->Attributes & EFI_VARIABLE_RUNTIME_ACCESS) == 0) && AtRuntime ()) {
       Status = EFI_WRITE_PROTECTED;
+      DEBUG((DEBUG_PROFILE, "variable service set variable goto done 0 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
       goto Done;
     }
 
@@ -2874,7 +2930,7 @@ VariableServiceSetVariable (
       // 2. The only attribute differing is EFI_VARIABLE_APPEND_WRITE
       //
       Status = EFI_INVALID_PARAMETER;
-      DEBUG ((DEBUG_INFO, "[Variable]: Rewritten a preexisting variable(0x%08x) with different attributes(0x%08x) - %g:%s\n", Variable.CurrPtr->Attributes, Attributes, VendorGuid, VariableName));
+      DEBUG ((DEBUG_PROFILE, "[Variable]: Rewritten a preexisting variable(0x%08x) with different attributes(0x%08x) - %g:%s\n", Variable.CurrPtr->Attributes, Attributes, VendorGuid, VariableName));
       goto Done;
     }
   }
@@ -2888,17 +2944,24 @@ VariableServiceSetVariable (
       //
       // The auto update operation failed, directly return to avoid inconsistency between PlatformLang and Lang.
       //
+      //
+      DEBUG((DEBUG_PROFILE, "variable service set variable goto done 2 TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
       goto Done;
     }
   }
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable before auth check TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   if (mVariableModuleGlobal->VariableGlobal.AuthSupport) {
     Status = AuthVariableLibProcessVariable (VariableName, VendorGuid, Data, DataSize, Attributes);
+    DEBUG((DEBUG_PROFILE, "variable service set variable after auth set var TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   } else {
     Status = UpdateVariable (VariableName, VendorGuid, Data, DataSize, Attributes, 0, 0, &Variable, NULL);
+    DEBUG((DEBUG_PROFILE, "variable service set variable after update var TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   }
 
 Done:
+
+  DEBUG((DEBUG_PROFILE, "variable service set variable begining of done TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   InterlockedDecrement (&mVariableModuleGlobal->VariableGlobal.ReentrantState);
   ReleaseLockOnlyAtBootTime (&mVariableModuleGlobal->VariableGlobal.VariableServicesLock);
 
@@ -2911,6 +2974,7 @@ Done:
     }
   }
 
+  DEBUG((DEBUG_PROFILE, "variable service set variable end TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   return Status;
 }
 

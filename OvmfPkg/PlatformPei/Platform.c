@@ -38,6 +38,8 @@
 #include <IndustryStandard/QemuCpuHotplug.h>
 #include <Library/MemEncryptSevLib.h>
 #include <OvmfPlatforms.h>
+#include <inttypes.h>
+#include <Library/TimerLib.h>
 
 #include "Platform.h"
 
@@ -307,7 +309,8 @@ InitializePlatform (
   EFI_HOB_PLATFORM_INFO  *PlatformInfoHob;
   EFI_STATUS             Status;
 
-  DEBUG ((DEBUG_INFO, "Platform PEIM Loaded\n"));
+  UINT64 ticks = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "Platform PEIM Loaded TICKS=%" PRIu64 "\n", ticks));
   PlatformInfoHob = BuildPlatformInfoHob ();
 
   PlatformInfoHob->SmmSmramRequire     = FeaturePcdGet (PcdSmmSmramRequire);

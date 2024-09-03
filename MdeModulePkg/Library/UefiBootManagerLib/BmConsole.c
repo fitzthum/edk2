@@ -8,6 +8,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "InternalBm.h"
+#include <inttypes.h>
+#include <Library/TimerLib.h>
 
 CHAR16  *mConVarName[] = {
   L"ConIn",
@@ -426,6 +428,8 @@ EfiBootManagerUpdateConsoleVariable (
   EFI_DEVICE_PATH_PROTOCOL  *NewDevicePath;
   EFI_DEVICE_PATH_PROTOCOL  *TempNewDevicePath;
 
+  DEBUG((DEBUG_PROFILE, "Eek RudyJantz2 TICKS=0\n"));
+
   if (ConsoleType >= ARRAY_SIZE (mConVarName)) {
     return EFI_INVALID_PARAMETER;
   }
@@ -531,6 +535,12 @@ EfiBootManagerConnectConsoleVariable (
   BOOLEAN                   DeviceExist;
   EFI_HANDLE                Handle;
 
+
+  UINT64 ticks1 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "Eek RudyJantz1 TICKS=%" PRIu64 "\n", ticks1));
+
+  // must be oe of a few types,
+  // and we are only running with ConIn rn
   if ((ConsoleType != ConIn) && (ConsoleType != ConOut) && (ConsoleType != ErrOut)) {
     return EFI_INVALID_PARAMETER;
   }
@@ -542,27 +552,42 @@ EfiBootManagerConnectConsoleVariable (
   //
   // Check if the console variable exist
   //
+
+  // there is some kind of mysterious console variable that needs to exist
+  // that's where we get startdevicepath
+  // so it's the head of some tree of devices
   GetEfiGlobalVariable2 (mConVarName[ConsoleType], (VOID **)&StartDevicePath, NULL);
   if (StartDevicePath == NULL) {
     return EFI_UNSUPPORTED;
   }
 
+
+  // wee're parsing this device thing for some reason
   CopyOfDevicePath = StartDevicePath;
   do {
+    UINT64 ticks = GetPerformanceCounter();
+    DEBUG ((DEBUG_PROFILE, "Eek RudyJantz3 TICKS=%" PRIu64 "\n", ticks));
     //
     // Check every instance of the console variable
     //
+
+    // get some instance, which is a node in the device path probably
     Instance = GetNextDevicePathInstance (&CopyOfDevicePath, &Size);
+    // whoops, you're at the end 
     if (Instance == NULL) {
       FreePool (StartDevicePath);
       return EFI_UNSUPPORTED;
     }
 
+    // so we're here on the current node (initially the root)
+    // and we're wondering about the next one
+    // we're looking for a leaf node 
     Next = Instance;
     while (!IsDevicePathEndType (Next)) {
       Next = NextDevicePathNode (Next);
     }
 
+    // declrae that it is the end 
     SetDevicePathEndNode (Next);
     //
     // Connect the USB console
@@ -570,15 +595,22 @@ EfiBootManagerConnectConsoleVariable (
     //  starts with the first element being a USB WWID
     //  or a USB Class device path
     //
+
+    // check if this device is a usb device
     if ((DevicePathType (Instance) == MESSAGING_DEVICE_PATH) &&
         ((DevicePathSubType (Instance) == MSG_USB_CLASS_DP) || (DevicePathSubType (Instance) == MSG_USB_WWID_DP))
         )
     {
+      // connect the usb device.
+      DEBUG((DEBUG_PROFILE, "Eek RudyJ connect USB TICKS=0\n"));
       Status = BmConnectUsbShortFormDevicePath (Instance);
       if (!EFI_ERROR (Status)) {
         DeviceExist = TRUE;
       }
     } else {
+      // turns out that it might bot really be the end 
+      // maybe usb differenaiteas itself before the leaf 
+      // so there is end type node -> device
       for (Next = Instance; !IsDevicePathEnd (Next); Next = NextDevicePathNode (Next)) {
         if ((DevicePathType (Next) == ACPI_DEVICE_PATH) && (DevicePathSubType (Next) == ACPI_ADR_DP)) {
           break;
@@ -591,32 +623,55 @@ EfiBootManagerConnectConsoleVariable (
           break;
         }
       }
+      // keep going until we find the end 
+      // or we find a device of one of these types
 
+      // if we're nota t the end, we must have found one of those types above
       if (!IsDevicePathEnd (Next)) {
         //
         // For GOP device path, start the video driver with NULL remaining device path
         //
+	//which apparently is a GOP device of some kind
+	//
+	DEBUG((DEBUG_PROFILE, "Eek RudyJ connect GOP TICKS=0\n"));
         SetDevicePathEndNode (Next);
         Status = EfiBootManagerConnectDevicePath (Instance, &Handle);
         if (!EFI_ERROR (Status)) {
           gBS->ConnectController (Handle, NULL, NULL, TRUE);
         }
       } else {
+	// if you do reach the end, connect the instance, with nothing?
+	UINT64 ticks35 = GetPerformanceCounter();
+	DEBUG((DEBUG_PROFILE, "Eek RudyJ connecting with nothing TICKS=%" PRIu64 "\n", ticks35));
         Status = EfiBootManagerConnectDevicePath (Instance, NULL);
       }
 
+      // see if it worked
       if (EFI_ERROR (Status)) {
+
+	UINT64 ticks34 = GetPerformanceCounter();
+	DEBUG((DEBUG_PROFILE, "Eek RudyJ failed to connect console TICKS=%" PRIu64 "\n", ticks34));
         //
         // Delete the instance from the console varialbe
         //
+	// if not update to null
         EfiBootManagerUpdateConsoleVariable (ConsoleType, NULL, Instance);
+	UINT64 ticks36 = GetPerformanceCounter();
+	DEBUG((DEBUG_PROFILE, "Eek RudyJ attempted to disconnect the console TICKS=%" PRIu64 "\n", ticks36));
+
       } else {
+	// otherwise the device exists
         DeviceExist = TRUE;
       }
     }
 
     FreePool (Instance);
   } while (CopyOfDevicePath != NULL);
+  
+  UINT64 ticks32 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "Eek RudyJantz32 TICKS=%" PRIu64 "\n", ticks32));
+
+  return EFI_SUCCESS;
 
   FreePool (StartDevicePath);
 

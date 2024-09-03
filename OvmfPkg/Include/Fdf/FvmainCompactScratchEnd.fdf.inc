@@ -49,7 +49,7 @@ DEFINE OUTPUT_SIZE = (128 + gUefiOvmfPkgTokenSpaceGuid.PcdOvmfPeiMemFvSize + 16 
 # SCRATCH_BUFFER_REQUEST_SIZE in
 # "MdeModulePkg/Library/LzmaCustomDecompressLib/LzmaDecompress.c".
 
-DEFINE DECOMP_SCRATCH_SIZE = 0x00010000
+DEFINE DECOMP_SCRATCH_SIZE = 0x00090000
 
 # Note: when we use PcdOvmfDxeMemFvBase in this context, BaseTools have not yet
 # offset it with MEMFD's base address. For that reason we have to do it manually.

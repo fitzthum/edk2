@@ -15,6 +15,8 @@
 #include <Register/Amd/Msr.h>
 
 #include "QemuFlash.h"
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 STATIC EFI_PHYSICAL_ADDRESS  mSevEsFlashPhysBase;
 
@@ -55,7 +57,9 @@ QemuFlashPtrWrite (
   IN        UINT8           Value
   )
 {
+  //return;
   if (MemEncryptSevEsIsEnabled ()) {
+    DEBUG((DEBUG_PROFILE, "SEV-ES is Enabled \n"));
     MSR_SEV_ES_GHCB_REGISTER  Msr;
     GHCB                      *Ghcb;
     EFI_PHYSICAL_ADDRESS      PhysAddr;
@@ -82,13 +86,17 @@ QemuFlashPtrWrite (
     // #VC exception. Instead, use the VMGEXIT MMIO write support directly
     // to perform the update.
     //
+
+    DEBUG((DEBUG_PROFILE, "qemu flash before stuff TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
     CcExitVmgInit (Ghcb, &InterruptState);
     Ghcb->SharedBuffer[0]    = Value;
     Ghcb->SaveArea.SwScratch = (UINT64)(UINTN)Ghcb->SharedBuffer;
     CcExitVmgSetOffsetValid (Ghcb, GhcbSwScratch);
     CcExitVmgExit (Ghcb, SVM_EXIT_MMIO_WRITE, PhysAddr, 1);
     CcExitVmgDone (Ghcb, InterruptState);
+    DEBUG((DEBUG_PROFILE, "qemu flash before after TICKS=%" PRIu64 "\n", GetPerformanceCounter()));
   } else {
+    DEBUG((DEBUG_PROFILE, "SEV-ES is not Enabled \n"));
     *Ptr = Value;
   }
 }

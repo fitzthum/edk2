@@ -16,6 +16,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include "Language.h"
 #include "HwErrRecSupport.h"
 #include <Library/VariablePolicyHelperLib.h>
+#include <Library/TimerLib.h>
+#include <inttypes.h>
 
 #define SET_BOOT_OPTION_SUPPORT_KEY_COUNT(a, c)  { \
       (a) = ((a) & ~EFI_BOOT_OPTION_SUPPORT_COUNT) | (((c) << LowBitSet32 (EFI_BOOT_OPTION_SUPPORT_COUNT)) & EFI_BOOT_OPTION_SUPPORT_COUNT); \
@@ -704,6 +706,9 @@ BdsEntry (
   PERF_CROSSMODULE_BEGIN ("BDS");
   DEBUG ((DEBUG_INFO, "[Bds] Entry...\n"));
 
+  UINT64 ticks1 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "EekBds1 TICKS=%" PRIu64 "\n", ticks1));
+
   //
   // Fill in FirmwareVendor and FirmwareRevision from PCDs
   //
@@ -743,6 +748,10 @@ BdsEntry (
       ASSERT_EFI_ERROR (Status);
     }
   }
+
+  UINT64 ticks12 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "EekBdsx2 TICKS=%" PRIu64 "\n", ticks12));
+
 
   InitializeHwErrRecSupport ();
 
@@ -798,6 +807,9 @@ BdsEntry (
 
     BootNext = NULL;
   }
+  UINT64 ticks13 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "EekBdsx3 TICKS=%" PRIu64 "\n", ticks13));
+
 
   //
   // Initialize the platform language variables
@@ -874,6 +886,9 @@ BdsEntry (
       gConnectConInEvent = NULL;
     }
   }
+  UINT64 ticks14 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "EekBdsx4 TICKS=%" PRIu64 "\n", ticks14));
+
 
   //
   // Do the platform init, can be customized by OEM/IBV
@@ -888,6 +903,10 @@ BdsEntry (
   PlatformBootManagerBeforeConsole ();
   PERF_INMODULE_END ("PlatformBootManagerBeforeConsole");
 
+  UINT64 ticks15 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "EekBdsx5 TICKS=%" PRIu64 "\n", ticks15));
+
+
   //
   // Initialize hotkey service
   //
@@ -899,22 +918,35 @@ BdsEntry (
   LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypeDriver);
   ProcessLoadOptions (LoadOptions, LoadOptionCount);
   EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
+  UINT64 ticks16 = GetPerformanceCounter();
+  DEBUG ((DEBUG_PROFILE, "EekBdsx6 TICKS=%" PRIu64 "\n", ticks16));
+
 
   //
   // Connect consoles
   //
+  
+  /// if you have OnDemnd = TRUE, then only connect these two consoles
   PERF_INMODULE_BEGIN ("EfiBootManagerConnectAllDefaultConsoles");
   if (PcdGetBool (PcdConInConnectOnDemand)) {
     EfiBootManagerConnectConsoleVariable (ConOut);
-    EfiBootManagerConnectConsoleVariable (ErrOut);
+    //EfiBootManagerConnectConsoleVariable (ErrOut);
     //
     // Do not connect ConIn devices when lazy ConIn feature is ON.
     //
   } else {
+    // otherwise, connect all of these consoles (which includes this stuff)
     EfiBootManagerConnectAllDefaultConsoles ();
   }
 
+
   PERF_INMODULE_END ("EfiBootManagerConnectAllDefaultConsoles");
+
+  UINT64 ticks = GetPerformanceCounter();
+  UINT64 start_value;
+  UINT64 end_value;
+  DEBUG ((DEBUG_PROFILE, "EekBds2 START=%" PRIu64 " END=%" PRIu64 " TICKS=%" PRIu64 "\n", start_value, end_value, ticks));
+
 
   //
   // Do the platform specific action after the console is ready
